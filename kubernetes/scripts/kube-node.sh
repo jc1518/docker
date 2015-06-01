@@ -33,7 +33,7 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	# Install dependencies 
         cd $GIT_HOME
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
-        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar xvzf flannel.tar.gz
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar xvzf flannel.tar.gz; mv flannel-* flannel
         git clone $KUBERNETES_GIT kubernetes
  
  	# Update PATH
