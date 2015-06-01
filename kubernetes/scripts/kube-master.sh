@@ -39,10 +39,9 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
         curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
         git clone $KUBERNETES_GIT kubernetes
-        git clone $FLANNEL_GIT flannel
 
 	# Update PATH
-	sed -i "/*kubernetes*/d" /root/.bash_profile
+	sed -i "/kubernetes/d" /root/.bash_profile
         sed -i "$ i  PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/etcd:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
 
         # Add to startup
@@ -72,7 +71,7 @@ source "${KUBE_ROOT}/hack/lib/init.sh"
 # Start etcd
 echo "Starting etcd..."
 mkdir -p ${GIT_HOME}/etcd-data
-${GIT_HOME}/etcd/etcd --data-dir ${GIT_HOME}/etcd-data --listen-client-urls "http://${API_HOST}:2379,http://${API_HOST}:4001" > ${LOG_DIR}/etcd.log 2>&1  &
+${GIT_HOME}/etcd/etcd --data-dir ${GIT_HOME}/etcd-data --listen-client-urls "http://${API_HOST}:2379,http://${API_HOST}:4001" --advertise-client-urls "http://${API_HOST}:2379,http://${API_HOST}:4001"  > ${LOG_DIR}/etcd.log 2>&1  &
 sleep 1
 
 # Start flanneld

@@ -15,7 +15,7 @@ FLANNEL_DL="https://github.com/coreos/flannel/releases/download/v0.4.1/flannel-0
 # Suggest not to change the following 
 GIT_HOME="/root"
 FLANNEL_NETWORK="172.16.0.0/16"
-KUBE_ROOT="{GIT_HOME}/kubernetes"
+KUBE_ROOT="${GIT_HOME}/kubernetes"
 API_HOST=${KUBE_MASTER}
 API_PORT="8080"
 KUBELET_PORT="10250"
@@ -33,11 +33,11 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	# Install dependencies 
         cd $GIT_HOME
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
-        curl $X -L $FLANNEL_DL -o flannel.tar.gz; mkdir -p flannel; tar -C flannel -xzf flannel.tar.gz
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
         git clone $KUBERNETES_GIT kubernetes
  
  	# Update PATH
-	sed -i "/*kubernetes*/d" /root/.bash_profile
+	sed -i "/kubernetes/d" /root/.bash_profile
         sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
 
 	# Add to startup
