@@ -1,0 +1,60 @@
+#!/bin/bash
+# Kubernetes cluster node
+
+# Define master and nodes
+KUBE_MASTER="dockerdev02.dmz.local"
+
+# Suggest not to change the following 
+GIT_HOME="/root"
+FLANNEL_NETWORK="172.16.0.0/16"
+KUBE_ROOT="{GIT_HOME}/kubernetes"
+API_HOST=${KUBE_MASTER}
+API_PORT="8080"
+KUBELET_PORT="10250"
+LOG_LEVEL="3"
+CHAOS_CHANCE="0.0"
+GO_OUT="${KUBE_ROOT}/_output/local/bin/linux/amd64"
+LOG_DIR="/var/log/kubernetes"; mkdir -p ${LOG_DIR} 
+
+# Terminate the runing processes if any
+pkill kubelet
+pkill kube-proxy
+systemctl stop docker.service
+pkill flanneld
+
+# Initialize 
+echo "Initializing..."
+cd "${KUBE_ROOT}"
+source /root/.bash_profile 
+source "${KUBE_ROOT}/hack/lib/init.sh"
+"${KUBE_ROOT}/hack/build-go.sh"
+
+# Start flanneld
+echo "Starting flanneld..."
+${GIT_HOME}/flannel/bin/flanneld -etcd-endpoints="http://${API_HOST}:4001" -etcd-prefix="/coreos.com/network" -iface="ens32" > ${LOG_DIR}/flanneld.log 2>&1 &
+
+# Waiting flanned to finish
+while [ ! -f /run/flannel/subnet.env ]; do sleep 1; echo "waiting flaneld to be ready..."; done
+
+# Start docker
+echo "Starting docker..."
+systemctl start docker.service
+
+# Start Kubelet
+echo "Starting kubelet..."
+"${GO_OUT}/kubelet" \
+  --v=${LOG_LEVEL} \
+  --chaos_chance="${CHAOS_CHANCE}" \
+  --hostname_override=`hostname` \
+  --address="0.0.0.0" \
+  --api_servers="${API_HOST}:${API_PORT}" \
+  --auth_path="${KUBE_ROOT}/hack/.test-cmd-auth" \
+  --port="$KUBELET_PORT" >"${LOG_DIR}/kubelet.log" 2>&1 &
+echo kubelet pid is $!
+
+# Start Kubelet-proxy
+echo "Starting kubelet-proxy..."
+"${GO_OUT}/kube-proxy" \
+  --v=${LOG_LEVEL} \
+  --master="http://${API_HOST}:${API_PORT}" >"${LOG_DIR}/kube-proxy.log" 2>&1 &
+echo kube-proxy pid is $!
