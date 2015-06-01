@@ -35,20 +35,20 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 
 	# Install dependencies 
         cd $GIT_HOME
-        curl $X -L $ETCD_DL -o etcd.tar.gz; mkdir -p etcd; tar -C etcd -xzf etcd.tar.gz
+        curl $X -L $ETCD_DL -o etcd.tar.gz; tar -xzf etcd.tar.gz; mv etcd-v2.0.11-linux-amd64 etcd
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
-        curl $X -L $FLANNEL_DL -o flannel.tar.gz; mkidr -p flannel; tar -C flannel -xzf flannel.tar.gz
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
         git clone $KUBERNETES_GIT kubernetes
         git clone $FLANNEL_GIT flannel
 
 	# Update PATH
-	sed -i "$ i #kube" /root/.bash_profile
-        sed -i "/#kube/ c PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/etcd:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
+	sed -i "/*kubernetes*/d" /root/.bash_profile
+        sed -i "$ i  PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/etcd:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
 
         # Add to startup
         if [[ ! $(grep kube /etc/rc.local) ]]; then echo "${GIT_HOME}/kube-master.sh > /tmp/kube-master.log 2>&1" >> /etc/rc.local; fi
+	chmod a+x /etc/rc.local
         systemctl start rc-local
-        systemctl enable rc-local
 fi
 
 # Terminate the runing processes if any

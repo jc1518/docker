@@ -37,13 +37,13 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
         git clone $KUBERNETES_GIT kubernetes
  
  	# Update PATH
-	sed -i "$ i #kube" /root/.bash_profile
-        sed -i "/#kube/ c PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
+	sed -i "/*kubernetes*/d" /root/.bash_profile
+        sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
 
 	# Add to startup
 	if [[ ! $(grep kube /etc/rc.local) ]]; then echo "${GIT_HOME}/kube-node.sh > /tmp/kube-node.log 2>&1"; fi
+	chmod a+x /etc/rc.local
 	systemctl start rc-local
-	systemctl enable rc-local
 fi
 
 # Terminate the runing processes if any
