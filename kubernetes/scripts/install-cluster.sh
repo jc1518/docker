@@ -12,8 +12,8 @@ ETCD_DL="https://github.com/coreos/etcd/releases/download/v2.0.11/etcd-v2.0.11-l
 GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
 KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
 FLANNEL_GIT="https://github.com/coreos/flannel.git"
-SCRIPT_MASTER=""
-SCRIPT_NODE=""
+SCRIPT_MASTER="https://raw.githubusercontent.com/jc1518/docker/master/kubernetes/scripts/kube-master.sh"
+SCRIPT_NODE="https://raw.githubusercontent.com/jc1518/docker/master/kubernetes/scripts/kube-node.sh"
 
 if [ $1 != "master" ] && [ $1 != "node" ]; then
 	echo "Usage: `basename $0` master|node"
@@ -38,7 +38,8 @@ if [ $1 == "master" ]; then
 	# Update PATH
 	sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/etcd:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
 	# Download kube-master.sh
-	curl -L $SCRIPT_MASTER
+	curl -L $SCRIPT_MASTER -o kube-master.sh
+	chmod a+x kube-master.sh
 	echo "Defind KUBE-MASTER and KUBE-NODES in ${GIT_HOME}/kube-master.sh"
 fi
 
@@ -46,7 +47,8 @@ if [ $1 == "node" ]; then
 	# Update PATH
 	sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
 	# Download kube-master.sh
-	curl -L $SCRIPT_MASTER
+	curl -L $SCRIPT_MASTER -o kube-node.sh
+	chmod a+x kube-node.sh
 	echo "Defind KUBE-MASTER in ${GIT_HOME}/kube-node.sh"
 fi
 
