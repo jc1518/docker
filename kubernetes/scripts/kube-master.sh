@@ -5,6 +5,15 @@
 KUBE_MASTER="dockerdev02.dmz.local"
 KUBE_NODES="dockerdev01.dmz.local,dockerdev02.dmz.local"
 
+# Set proxy if needed
+PROXY=""
+
+# Git repo 
+ETCD_DL="https://github.com/coreos/etcd/releases/download/v2.0.11/etcd-v2.0.11-linux-amd64.tar.gz"
+GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
+KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
+FLANNEL_GIT="https://github.com/coreos/flannel.git"
+
 # Suggest not to change the following 
 GIT_HOME="/root"
 FLANNEL_NETWORK="172.16.0.0/16"
@@ -17,6 +26,28 @@ LOG_LEVEL="3"
 CHAOS_CHANCE="0.0"
 GO_OUT="${KUBE_ROOT}/_output/local/bin/linux/amd64"
 LOG_DIR="/var/log/kubernetes"; mkdir -p ${LOG_DIR} 
+
+if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
+        echo "Installing software..."  
+        # Configure proxy if there is one
+        if [ ! -z $PROXY ]; then export http_proxy="$PROXY"; git config --global http.proxy "$PROXY"; fi
+
+	# Install dependencies 
+        yum -y install git curl gcc docker
+        cd $GIT_HOME
+        curl -L $ETCD_DL -o etcd.tar.gz; tar xvzf etcd.tar.gz
+        curl -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
+        git clone $KUBERNETES_GIT kubernetes
+        git clone $FLANNEL_GIT flannel
+
+	# Update PATH
+        sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/etcd:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
+
+        # Add to startup
+        if [[ ! $(grep kube /etc/rc.local) ]]; then echo "${GIT_HOME}/kube-master.sh > /tmp/kube-master.log 2>&1" >> /etc/rc.local; fi
+        systemctl start rc-local
+        systemctl enable rc-local
+fi
 
 # Terminate the runing processes if any
 echo "Clearing the environment..."
@@ -93,6 +124,8 @@ echo "Starting kube-scheduler..."
   --v=${LOG_LEVEL} \
   --master="http://${API_HOST}:${API_PORT}" >"${LOG_DIR}/kube-scheduler.log" 2>&1 &
 echo scheduler pid is $!
+
+date > ${GIT_HOME}/.kubeinstalled
 
 cat <<EOF
 

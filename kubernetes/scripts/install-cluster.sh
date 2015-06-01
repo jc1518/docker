@@ -15,7 +15,7 @@ FLANNEL_GIT="https://github.com/coreos/flannel.git"
 SCRIPT_MASTER="https://raw.githubusercontent.com/jc1518/docker/master/kubernetes/scripts/kube-master.sh"
 SCRIPT_NODE="https://raw.githubusercontent.com/jc1518/docker/master/kubernetes/scripts/kube-node.sh"
 
-if [ -z $1 ] || [ $1 != master ] || [ $1 != node ]; then
+if [ -z $1 ] || [ $1 != master ] && [ $1 != node ]; then
 	echo "Usage: `basename $0` master|node"
 	exit 1
 fi

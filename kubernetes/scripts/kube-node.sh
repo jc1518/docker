@@ -1,8 +1,16 @@
 #!/bin/bash
 # Kubernetes cluster node
 
-# Define master and nodes
+# Define master host
 KUBE_MASTER="dockerdev02.dmz.local"
+
+# Set proxy if needed
+PROXY=""
+
+# Git repo 
+GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
+KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
+FLANNEL_GIT="https://github.com/coreos/flannel.git"
 
 # Suggest not to change the following 
 GIT_HOME="/root"
@@ -15,6 +23,27 @@ LOG_LEVEL="3"
 CHAOS_CHANCE="0.0"
 GO_OUT="${KUBE_ROOT}/_output/local/bin/linux/amd64"
 LOG_DIR="/var/log/kubernetes"; mkdir -p ${LOG_DIR} 
+
+if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
+        echo "Installing software..."  
+        # Configure proxy if there is one
+        if [ ! -z $PROXY ]; then export http_proxy="$PROXY"; git config --global http.proxy "$PROXY"; fi
+
+	# Install dependencies 
+        yum -y install git curl gcc docker
+        cd $GIT_HOME
+        curl -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
+        git clone $KUBERNETES_GIT kubernetes
+        git clone $FLANNEL_GIT flannel
+ 
+ 	# Update PATH
+        sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
+
+	# Add to startup
+	if [[ ! $(grep kube /etc/rc.local) ]]; then echo "${GIT_HOME}/kube-node.sh > /tmp/kube-node.log 2>&1"; fi
+	systemctl start rc-local
+	systemctl enable rc-local
+fi
 
 # Terminate the runing processes if any
 pkill kubelet
@@ -58,3 +87,7 @@ echo "Starting kubelet-proxy..."
   --v=${LOG_LEVEL} \
   --master="http://${API_HOST}:${API_PORT}" >"${LOG_DIR}/kube-proxy.log" 2>&1 &
 echo kube-proxy pid is $!
+
+date > ${GIT_HOME}/.kubeinstalled
+
+
