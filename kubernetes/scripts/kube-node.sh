@@ -26,11 +26,11 @@ LOG_DIR="/var/log/kubernetes"; mkdir -p ${LOG_DIR}
 
 if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
         echo "Installing software..."  
+        yum -y install git curl gcc docker
         # Configure proxy if there is one
         if [ ! -z $PROXY ]; then echo "Adding proxy"; X="-x $PROXY"; git config --global http.proxy "$PROXY"; fi
 
 	# Install dependencies 
-        yum -y install git curl gcc docker
         cd $GIT_HOME
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
         git clone $KUBERNETES_GIT kubernetes
