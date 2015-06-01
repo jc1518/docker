@@ -27,6 +27,55 @@ LOG_DIR="/var/log/kubernetes"; mkdir -p ${LOG_DIR}
 if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
         echo "Installing software..."  
         yum -y install git curl gcc docker
+	systemctl stop docker.service
+	systemctl disable docker.service
+        
+	# Remove the default docker0 bridge
+	ip link set dev docker0 down
+	brctl delbr docker0
+
+	# User zzdocker0 as the bridge
+	cat > /usr/lib/systemd/system/docker.service << EOF
+	[Unit]
+	Description=Docker Application Container Engine
+	Documentation=http://docs.docker.com
+	After=network.target
+
+	[Service]
+	Type=notify
+	Environment="BRIDGE=zzdocker0"
+	EnvironmentFile=-/etc/sysconfig/docker
+	EnvironmentFile=-/etc/sysconfig/docker-storage
+	EnvironmentFile=-/etc/sysconfig/docker-network
+	EnvironmentFile=-/run/flannel/subnet.env
+	ExecStart=/usr/bin/docker -d $OPTIONS \
+			$DOCKER_STORAGE_OPTIONS \
+            		$DOCKER_NETWORK_OPTIONS \
+			$ADD_REGISTRY \
+			$BLOCK_REGISTRY \
+			$INSECURE_REGISTRY \
+			--bridge=${BRIDGE} \
+			--mtu=${FLANNEL_MTU}
+	LimitNOFILE=1048576
+	LimitNPROC=1048576
+	LimitCORE=infinity
+	MountFlags=slave
+
+	# set up the bridge
+	ExecStartPre=/usr/sbin/brctl addbr ${BRIDGE}
+	ExecStartPre=/usr/sbin/ip addr add ${FLANNEL_SUBNET} dev ${BRIDGE}
+	ExecStartPre=/usr/sbin/ip link set dev ${BRIDGE} up
+	#
+	# clean up bridge afterwards
+	ExecStopPost=/usr/sbin/ip link set dev ${BRIDGE} down
+	ExecStopPost=/usr/sbin/brctl delbr ${BRIDGE}
+
+	[Install]
+	WantedBy=multi-user.target
+EOF
+
+	systemctl daemon-reload
+
         # Configure proxy if there is one
         if [ ! -z $PROXY ]; then echo "Adding proxy"; X="-x $PROXY"; git config --global http.proxy "$PROXY"; fi
 
@@ -90,5 +139,4 @@ echo "Starting kubelet-proxy..."
 echo kube-proxy pid is $!
 
 date > ${GIT_HOME}/.kubeinstalled
-
 
