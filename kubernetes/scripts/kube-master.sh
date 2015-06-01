@@ -11,13 +11,13 @@ PROXY=""
 # Git repo 
 ETCD_DL="https://github.com/coreos/etcd/releases/download/v2.0.11/etcd-v2.0.11-linux-amd64.tar.gz"
 GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
+FLANNEL_DL="https://github.com/coreos/flannel/releases/download/v0.4.1/flannel-0.4.1-linux-amd64.tar.gz"
 KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
-FLANNEL_GIT="https://github.com/coreos/flannel.git"
 
 # Suggest not to change the following 
 GIT_HOME="/root"
 FLANNEL_NETWORK="172.16.0.0/16"
-KUBE_ROOT="{GIT_HOME}/kubernetes"
+KUBE_ROOT="${GIT_HOME}/kubernetes"
 API_HOST=${KUBE_MASTER}
 API_PORT="8080"
 API_CORS_ALLOWED_ORIGINS="0.0.0.0"
@@ -37,6 +37,7 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
         cd $GIT_HOME
         curl $X -L $ETCD_DL -o etcd.tar.gz; tar xvzf etcd.tar.gz
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar xvzf flannel.tar.gz
         git clone $KUBERNETES_GIT kubernetes
         git clone $FLANNEL_GIT flannel
 

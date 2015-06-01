@@ -10,7 +10,7 @@ PROXY=""
 # Git repo 
 GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
 KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
-FLANNEL_GIT="https://github.com/coreos/flannel.git"
+FLANNEL_DL="https://github.com/coreos/flannel/releases/download/v0.4.1/flannel-0.4.1-linux-amd64.tar.gz"
 
 # Suggest not to change the following 
 GIT_HOME="/root"
@@ -33,8 +33,8 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	# Install dependencies 
         cd $GIT_HOME
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar xvzf flannel.tar.gz
         git clone $KUBERNETES_GIT kubernetes
-        git clone $FLANNEL_GIT flannel
  
  	# Update PATH
         sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
