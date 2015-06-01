@@ -33,11 +33,12 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	# Install dependencies 
         cd $GIT_HOME
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
-        curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar xvzf flannel.tar.gz; mv flannel-* flannel
+        curl $X -L $FLANNEL_DL -o flannel.tar.gz; mkdir -p flannel; tar -C flannel -xzf flannel.tar.gz
         git clone $KUBERNETES_GIT kubernetes
  
  	# Update PATH
-        sed -i "$ i PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack;${GIT_HOME}/flannel/bin" /root/.bash_profile
+	sed -i "$ i #kube" /root/.bash_profile
+        sed -i "/#kube/ c PATH=$PATH:/usr/local/go/bin:${GIT_HOME}/kubernetes/cluster:${GIT_HOME}/kubernetes/hack:${GIT_HOME}/flannel" /root/.bash_profile
 
 	# Add to startup
 	if [[ ! $(grep kube /etc/rc.local) ]]; then echo "${GIT_HOME}/kube-node.sh > /tmp/kube-node.log 2>&1"; fi
@@ -60,7 +61,7 @@ source "${KUBE_ROOT}/hack/lib/init.sh"
 
 # Start flanneld
 echo "Starting flanneld..."
-${GIT_HOME}/flannel/bin/flanneld -etcd-endpoints="http://${API_HOST}:4001" -etcd-prefix="/coreos.com/network" -iface="ens32" > ${LOG_DIR}/flanneld.log 2>&1 &
+${GIT_HOME}/flannel/flanneld -etcd-endpoints="http://${API_HOST}:4001" -etcd-prefix="/coreos.com/network" -iface="ens32" > ${LOG_DIR}/flanneld.log 2>&1 &
 
 # Waiting flanned to finish
 while [ ! -f /run/flannel/subnet.env ]; do sleep 1; echo "waiting flaneld to be ready..."; done
