@@ -1,0 +1,44 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1beta3",
+   "metadata":{
+      "name":"my-httpd-01",
+      "labels":{
+         "name":"my-httpd-01"
+      }   
+   },  
+   "spec":{
+      "replicas":2,
+      "selector":{
+         "name":"my-httpd-01"
+      },  
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"my-httpd-01"
+            }   
+         },  
+         "spec":{
+            "volumes":[
+	      {"name": "web", "hostPath": {"path": "/web"}}
+	  ],	
+            "containers":[
+               {   
+                  "name":"my-httpd-01",
+                  "image":"dockerdev02.dmz.local:5000/my-httpd",
+		  "volumeMounts":[
+		    {"name": "web", "mountPath": "/var/www/html"}
+		  ],
+                  "ports":[
+                     {   
+                        "containerPort":80,
+                        "protocol":"TCP"
+                     }   
+                  ]   
+               }   
+            ]   
+         }   
+      }   
+   }   
+}
+

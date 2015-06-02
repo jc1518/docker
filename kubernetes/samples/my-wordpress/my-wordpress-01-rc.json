@@ -1,0 +1,48 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1beta3",
+   "metadata":{
+      "name":"my-wordpress-01",
+      "labels":{
+         "name":"my-wordpress-01"
+      }   
+   },  
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"my-wordpress-01"
+      },  
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"my-wordpress-01"
+            }   
+         },  
+         "spec":{
+            "volumes":[
+	      {"name": "wordpress", "hostPath": {"path": "/SHARE-VOLUMES/wordpress"}}
+	  ],	
+            "containers":[
+               {   
+                  "name":"my-wordpress-01",
+                  "image":"dockerdev02.dmz.local:5000/my-wordpress",
+		  "env": [
+		    {"name": "WORDPRESS_DB_HOST", "value": "172.16.0.95:3306"},
+		    {"name": "WORDPRESS_DB_PASSWORD", "value": "toor"}
+		  ],  
+		  "volumeMounts":[
+		    {"name": "wordpress", "mountPath": "/var/www/html"}
+		  ],
+                  "ports":[
+                     {   
+                        "containerPort":80,
+                        "protocol":"TCP"
+                     }   
+                  ]   
+               }   
+            ]   
+         }   
+      }   
+   }   
+}
+

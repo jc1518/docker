@@ -1,0 +1,47 @@
+{
+   "kind":"ReplicationController",
+   "apiVersion":"v1beta3",
+   "metadata":{
+      "name":"my-mysql-01",
+      "labels":{
+         "name":"my-mysql-01"
+      }   
+   },  
+   "spec":{
+      "replicas":1,
+      "selector":{
+         "name":"my-mysql-01"
+      },  
+      "template":{
+         "metadata":{
+            "labels":{
+               "name":"my-mysql-01"
+            }   
+         },  
+         "spec":{
+            "volumes":[
+	      {"name": "mysql", "hostPath": {"path": "/SHARE-VOLUMES/mysql"}}
+	  ],	
+            "containers":[
+               {   
+                  "name":"my-mysql-01",
+                  "image":"dockerdev02.dmz.local:5000/my-mysql",
+		  "env": [
+		    {"name": "MYSQL_ROOT_PASSWORD", "value": "toor"}
+		  ],  
+		  "volumeMounts":[
+		    {"name": "mysql", "mountPath": "/var/lib/mysql"}
+		  ],
+                  "ports":[
+                     {   
+                        "containerPort":3306,
+                        "protocol":"TCP"
+                     }   
+                  ]   
+               }   
+            ]   
+         }   
+      }   
+   }   
+}
+

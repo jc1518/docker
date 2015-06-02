@@ -1,0 +1,23 @@
+{
+   "kind":"Service",
+   "apiVersion":"v1beta3",
+   "metadata":{
+      "name":"my-httpd-01",
+      "labels":{
+         "name":"my-httpd-01"
+      }
+   },
+   "spec":{
+      "ports": [
+        {
+          "port":8000,
+          "targetPort":80,
+          "protocol":"TCP"
+        }
+      ],
+      "publicIPs":["192.168.1.11","192.168.1.12"],
+      "selector":{
+         "name":"my-httpd-01"
+      }
+   }
+}
