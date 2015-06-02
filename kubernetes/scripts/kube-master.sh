@@ -3,7 +3,7 @@
 # Version 1.0 - 02/06/2015
 
 # Define master host IP address
-KUBE_MASTER="10.68.246.12"
+KUBE_MASTER="X.X.X.X"
 
 # Set proxy if needed
 PROXY=""
