@@ -79,7 +79,14 @@ EOF
 	systemctl daemon-reload
 
         # Configure proxy if there is one
-        if [ ! -z $PROXY ]; then echo "Adding proxy"; X="-x $PROXY"; git config --global http.proxy "$PROXY"; fi
+        if [ ! -z $PROXY ]; then
+	       echo "Adding proxy"
+	       X="-x $PROXY"
+	       git config --global http.proxy "$PROXY"
+	       if [[ ! $(grep ^HTTP_PROXY /etc/sysconfig/docker) ]]; then
+		       echo HTTP_PROXY="$PROXY" >> /etc/sysconfig/docker
+	       fi
+       fi
 
 	# Install dependencies 
         cd $GIT_HOME
