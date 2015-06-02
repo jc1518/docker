@@ -1,8 +1,9 @@
 #!/bin/bash
 # Kubernetes cluster node
+# Version 1.0 - 02/06/2015
 
-# Define master host
-KUBE_MASTER="dockerdev02.dmz.local"
+# Define master host IP address
+KUBE_MASTER="X.X.X.X"
 
 # Set proxy if needed
 PROXY=""

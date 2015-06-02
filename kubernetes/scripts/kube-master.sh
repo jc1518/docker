@@ -1,7 +1,8 @@
 #!/bin/bash
 # Kubernetes cluster master
+# Version 1.0 - 02/06/2015
 
-# Define master and nodes
+# Define master host IP address
 KUBE_MASTER="10.68.246.12"
 
 # Set proxy if needed
@@ -90,7 +91,7 @@ EOF
 
 	# Install dependencies 
         cd $GIT_HOME
-	rm -rf etcd etcd.tar.gz flannel flannel.tar.gz go.tar.gz kubernetes ${LOG_DIR}
+	rm -rf etcd etcd.tar.gz flannel flannel.tar.gz go.tar.gz kubernetes
         curl $X -L $ETCD_DL -o etcd.tar.gz; tar -xzf etcd.tar.gz; mv etcd-v2.0.11-linux-amd64 etcd
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
         curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
@@ -187,6 +188,7 @@ date > ${GIT_HOME}/.kubeinstalled
 #################################################################
 # Enable the following if you want the master also to be a node #
 #################################################################
+#######START######
 # Start Kubelet
 echo "Starting kubelet..."
 "${GO_OUT}/kubelet" \
@@ -203,6 +205,8 @@ echo "Starting kubelet-proxy..."
   --v=${LOG_LEVEL} \
   --master="http://${API_HOST}:${API_PORT}" >"${LOG_DIR}/kube-proxy.log" 2>&1 &
 echo kube-proxy pid is $!
+#######END#######
+
 
 cat <<EOF
 
