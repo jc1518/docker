@@ -3,12 +3,11 @@
 
 # Define master and nodes
 KUBE_MASTER="10.68.246.12"
-KUBE_NODES="dockerdev01.dmz.local,dockerdev02.dmz.local"
 
 # Set proxy if needed
 PROXY=""
 
-# Git repo 
+# Source and Git repo 
 ETCD_DL="https://github.com/coreos/etcd/releases/download/v2.0.11/etcd-v2.0.11-linux-amd64.tar.gz"
 GO_DL="https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz"
 FLANNEL_DL="https://github.com/coreos/flannel/releases/download/v0.4.1/flannel-0.4.1-linux-amd64.tar.gz"
@@ -16,11 +15,11 @@ KUBERNETES_GIT="https://github.com/GoogleCloudPlatform/kubernetes.git"
 
 # Suggest not to change the following 
 GIT_HOME="/root"
-FLANNEL_NETWORK="172.16.0.0/24"
+FLANNEL_NETWORK="172.16.0.0/16"
+KUBE_NETWORK="172.16.0.0/24"
 KUBE_ROOT="${GIT_HOME}/kubernetes"
 API_HOST=${KUBE_MASTER}
 API_PORT="8080"
-API_CORS_ALLOWED_ORIGINS="0.0.0.0"
 KUBELET_PORT="10250"
 LOG_LEVEL="3"
 CHAOS_CHANCE="0.0"
@@ -51,27 +50,27 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	EnvironmentFile=-/etc/sysconfig/docker-storage
 	EnvironmentFile=-/etc/sysconfig/docker-network
 	EnvironmentFile=-/run/flannel/subnet.env
-	ExecStart=/usr/bin/docker -d $OPTIONS \
-			$DOCKER_STORAGE_OPTIONS \
-            		$DOCKER_NETWORK_OPTIONS \
-			$ADD_REGISTRY \
-			$BLOCK_REGISTRY \
-			$INSECURE_REGISTRY \
-			--bridge=${BRIDGE} \
-			--mtu=${FLANNEL_MTU}
+	ExecStart=/usr/bin/docker -d \$OPTIONS \
+			\$DOCKER_STORAGE_OPTIONS \
+            		\$DOCKER_NETWORK_OPTIONS \
+			\$ADD_REGISTRY \
+			\$BLOCK_REGISTRY \
+			\$INSECURE_REGISTRY \
+			--bridge=\${BRIDGE} \
+			--mtu=\${FLANNEL_MTU}
 	LimitNOFILE=1048576
 	LimitNPROC=1048576
 	LimitCORE=infinity
 	MountFlags=slave
 
 	# set up the bridge
-	ExecStartPre=/usr/sbin/brctl addbr ${BRIDGE}
-	ExecStartPre=/usr/sbin/ip addr add ${FLANNEL_SUBNET} dev ${BRIDGE}
-	ExecStartPre=/usr/sbin/ip link set dev ${BRIDGE} up
+	ExecStartPre=/usr/sbin/brctl addbr \${BRIDGE}
+	ExecStartPre=/usr/sbin/ip addr add \${FLANNEL_SUBNET} dev \${BRIDGE}
+	ExecStartPre=/usr/sbin/ip link set dev \${BRIDGE} up
 	#
 	# clean up bridge afterwards
-	ExecStopPost=/usr/sbin/ip link set dev ${BRIDGE} down
-	ExecStopPost=/usr/sbin/brctl delbr ${BRIDGE}
+	ExecStopPost=/usr/sbin/ip link set dev \${BRIDGE} down
+	ExecStopPost=/usr/sbin/brctl delbr \${BRIDGE}
 
 	[Install]
 	WantedBy=multi-user.target
@@ -84,6 +83,7 @@ EOF
 
 	# Install dependencies 
         cd $GIT_HOME
+	rm -rf etcd etcd.tar.gz flannel flannel.tar.gz go.tar.gz kubernetes ${LOG_DIR}
         curl $X -L $ETCD_DL -o etcd.tar.gz; tar -xzf etcd.tar.gz; mv etcd-v2.0.11-linux-amd64 etcd
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
         curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
@@ -146,14 +146,14 @@ while [ ! -f /run/flannel/subnet.env ]; do sleep 1; echo "waiting flaneld to be 
 
 # Start docker
 echo "Starting docker..."
-systemctl start docker.service
+systemctl restart docker.service
 
 # Start kube-api server
 echo "Starting kube-api server..."
 "${GO_OUT}/kube-apiserver" --v="${LOG_LEVEL}" \
 	--admission_control="NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,ResourceQuota" \
 	--insecure-bind-address="${API_HOST}" --insecure-port="${API_PORT}" --runtime_config="api/v1beta3" \
-	--etcd_servers="http://${API_HOST}:4001" --portal_net="${FLANNEL_NETWORK}" >"${LOG_DIR}/kube-apiserver.log" 2>&1 &
+	--etcd_servers="http://${API_HOST}:4001" --portal_net="${KUBE_NETWORK}" >"${LOG_DIR}/kube-apiserver.log" 2>&1 &
 echo api server pid is $!
 
 # Wait for kube-apiserver to come up before launching the rest of the components.
@@ -164,7 +164,7 @@ kube::util::wait_for_url "http://${API_HOST}:${API_PORT}/api/v1beta3/pods" "apis
 echo "Starting kube-controller-manager..."
 "${GO_OUT}/kube-controller-manager" \
   --v=${LOG_LEVEL} \
-  --machines="${KUBE_NODES}" \
+  --address="0.0.0.0" \
   --master="${API_HOST}:${API_PORT}" >"${LOG_DIR}/kube-controller-manager.log" 2>&1 &
 echo controll manager pid is $!
 
@@ -185,10 +185,8 @@ echo "Starting kubelet..."
 "${GO_OUT}/kubelet" \
   --v=${LOG_LEVEL} \
   --chaos_chance="${CHAOS_CHANCE}" \
-  --hostname_override=`hostname` \
   --address="0.0.0.0" \
   --api_servers="${API_HOST}:${API_PORT}" \
-  --auth_path="${KUBE_ROOT}/hack/.test-cmd-auth" \
   --port="$KUBELET_PORT" >"${LOG_DIR}/kubelet.log" 2>&1 &
 echo kubelet pid is $!
 
@@ -203,12 +201,12 @@ cat <<EOF
 
 To use your cluster, you need to run:
 
-  source ~/.bash_profile 
+  source /root/.bash_profile 
   kubectl.sh config set-cluster my-cluster --server=http://${API_HOST}:${API_PORT} --insecure-skip-tls-verify=true
   kubectl.sh config set-context my-cluster --cluster=my-cluster
   kubectl.sh config use-context my-cluster
 
-Example:
+Kubectl examples:
 
   kubectl.sh get nodes # Check the nodes
   kubectl.sh get pods  # Check pods

@@ -48,27 +48,27 @@ if [ ! -f ${GIT_HOME}/.kubeinstalled ]; then
 	EnvironmentFile=-/etc/sysconfig/docker-storage
 	EnvironmentFile=-/etc/sysconfig/docker-network
 	EnvironmentFile=-/run/flannel/subnet.env
-	ExecStart=/usr/bin/docker -d $OPTIONS \
-			$DOCKER_STORAGE_OPTIONS \
-            		$DOCKER_NETWORK_OPTIONS \
-			$ADD_REGISTRY \
-			$BLOCK_REGISTRY \
-			$INSECURE_REGISTRY \
-			--bridge=${BRIDGE} \
-			--mtu=${FLANNEL_MTU}
+	ExecStart=/usr/bin/docker -d \$OPTIONS \
+			\$DOCKER_STORAGE_OPTIONS \
+            		\$DOCKER_NETWORK_OPTIONS \
+			\$ADD_REGISTRY \
+			\$BLOCK_REGISTRY \
+			\$INSECURE_REGISTRY \
+			--bridge=\${BRIDGE} \
+			--mtu=\${FLANNEL_MTU}
 	LimitNOFILE=1048576
 	LimitNPROC=1048576
 	LimitCORE=infinity
 	MountFlags=slave
 
 	# set up the bridge
-	ExecStartPre=/usr/sbin/brctl addbr ${BRIDGE}
-	ExecStartPre=/usr/sbin/ip addr add ${FLANNEL_SUBNET} dev ${BRIDGE}
-	ExecStartPre=/usr/sbin/ip link set dev ${BRIDGE} up
+	ExecStartPre=/usr/sbin/brctl addbr \${BRIDGE}
+	ExecStartPre=/usr/sbin/ip addr add \${FLANNEL_SUBNET} dev \${BRIDGE}
+	ExecStartPre=/usr/sbin/ip link set dev \${BRIDGE} up
 	#
 	# clean up bridge afterwards
-	ExecStopPost=/usr/sbin/ip link set dev ${BRIDGE} down
-	ExecStopPost=/usr/sbin/brctl delbr ${BRIDGE}
+	ExecStopPost=/usr/sbin/ip link set dev \${BRIDGE} down
+	ExecStopPost=/usr/sbin/brctl delbr \${BRIDGE}
 
 	[Install]
 	WantedBy=multi-user.target
@@ -81,6 +81,7 @@ EOF
 
 	# Install dependencies 
         cd $GIT_HOME
+	rm -rf go.tar.gz flannel.tar.gz flannel kubernetes
         curl $X -L $GO_DL -o go.tar.gz; tar -C /usr/local -xzf go.tar.gz
         curl $X -L $FLANNEL_DL -o flannel.tar.gz; tar -xzf flannel.tar.gz; mv flannel-0.4.1 flannel
         git clone $KUBERNETES_GIT kubernetes
@@ -98,7 +99,7 @@ fi
 # Terminate the runing processes if any
 pkill kubelet
 pkill kube-proxy
-systemctl stop docker.service
+pkill docker
 pkill flanneld
 
 # Initialize 
@@ -117,17 +118,15 @@ while [ ! -f /run/flannel/subnet.env ]; do sleep 1; echo "waiting flaneld to be 
 
 # Start docker
 echo "Starting docker..."
-systemctl start docker.service
+systemctl restart docker.service
 
 # Start Kubelet
 echo "Starting kubelet..."
 "${GO_OUT}/kubelet" \
   --v=${LOG_LEVEL} \
   --chaos_chance="${CHAOS_CHANCE}" \
-  --hostname_override=`hostname` \
   --address="0.0.0.0" \
   --api_servers="${API_HOST}:${API_PORT}" \
-  --auth_path="${KUBE_ROOT}/hack/.test-cmd-auth" \
   --port="$KUBELET_PORT" >"${LOG_DIR}/kubelet.log" 2>&1 &
 echo kubelet pid is $!
 
